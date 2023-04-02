@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="zust.competition.sys.dao.TeamDao">
+
+    <select id="academyList" resultType="Academy" >
+        SELECT *
+        from academy
+    </select>
+
+    <select id="searchTeamAward" resultType="Team">
+        SELECT team.*
+        FROM team LEFT JOIN user u on u.id = team.leader_id
+                    LEFT JOIN competition c on team.cp_id = c.id
+        <where>
+            team.is_delete = 0 AND team.status = 2 AND team.is_awarded = 1
+            <if test="leaderAcademyId != null">
+                AND u.academy_id = #{leaderAcademyId}
+            </if>
+            <if test="leaderNumber != null and leaderNumber != ''">
+                AND u.number = #{leaderNumber}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <bind name="_keyword" value="'%' + keyword + '%'"/>
+                AND (team.team_name LIKE #{_keyword} or u.name LIKE #{_keyword} or c.title LIKE #{_keyword} or u.number LIKE #{_keyword})
+            </if>
+        </where>
+        ORDER BY update_time DESC
+    </select>
+
+
+
+    <select id="getTeamByAcademy" resultType="Team">
+        select *
+        from team
+        WHERE is_delete=0 AND is_awarded=1 AND
+                leader_id IN
+                (select `user`.id
+                 from `user` LEFT JOIN academy ON `user`.academy_id=academy.id
+                 WHERE academy.id=#{id})
+    </select>
+
+    <select id="countByAcademy" resultType="CountQuery" parameterType="CountQuery">
+        SELECT academy.id as academyId, academy.name as `academy`, count(*) as `count`
+        from academy RIGHT JOIN
+        (SELECT user.* from team LEFT JOIN `user` ON leader_id=`user`.id
+        <where>
+            team.is_delete=0
+            <if test="isWin != null">
+                AND is_win = #{isWin}
+            </if>
+        </where>
+        ) u
+        on academy.id = u.academy_id
+        GROUP BY academy.id
+    </select>
+
+    <insert id="insertMessage" parameterType="Message"  useGeneratedKeys="true" keyProperty="id">
+        insert into message (sender_id,receiver_id,content,operator_id,jump_type)
+        values (#{senderId},#{receiverId},#{content},#{operatorId},#{jumpType})
+    </insert>
+
+    <select id="getTeam" parameterType="TeamQuery" resultType="TeamDto">
+        SELECT team.*, c.title as cpName, c.`limit` as limitNum, u.name as leaderName
+        FROM team LEFT JOIN competition c on team.cp_id = c.id
+                    LEFT JOIN user u on team.leader_id = u.id
+        <where>
+            team.is_delete = 0
+            <if test="teamId != null">
+                AND team.id = #{teamId}
+            </if>
+            <if test="leaderId != null">
+                AND team.leader_id = #{leaderId}
+            </if>
+            <if test="cpId != null">
+                AND team.cp_id = #{cpId}
+            </if>
+            <if test="invitationCode != null and invitationCode != ''">
+                AND team.invitation_code = #{invitationCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="getUserTeam" resultType="UserTeam" parameterType="int">
+        select *
+        from user_team
+        where id =#{id} and is_delete = 0
+    </select>
+
+    <update id="updateUserTeam" parameterType="UserTeam">
+        update user_team
+        <set>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="getInviteTeacher" parameterType="int" resultType="TeamTeacher">
+        SELECT *
+        FROM team_teacher
+        WHERE team_id = #{teamId}
+          AND is_delete = 0
+    </select>
+
+    <insert id="insertTeamTeacher" parameterType="TeamTeacher"  useGeneratedKeys="true" keyProperty="id">
+        insert into team_teacher (team_id,teacher_id,operator_id)
+        values (#{teamId},#{teacherId},#{operatorId})
+    </insert>
+
+    <select id="myJoin" resultType="Team">
+        select team.*
+        from user_team
+                 LEFT JOIN team on team.id=team_id
+        WHERE student_id=#{id} AND user_team.status = 1
+          AND team.is_delete = 0 and user_team.is_delete = 0
+    </select>
+
+    <select id="getMyTeamByCpId" parameterType="int" resultType="team">
+        SELECT team.*
+        FROM user_team LEFT JOIN team ON team.id = team_id
+        WHERE user_team.student_id = #{userId} AND team.cp_id = #{cpId}
+          AND team.is_delete = 0
+    </select>
+
+    <select id="selectByCode" resultType="Team">
+        SELECT *
+        FROM team
+        WHERE invitation_code=#{invitationCode}
+    </select>
+
+    <sql id="Base_Column_List">
+        id,cp_id,`team_name`,leader_id,`team_intro`,`member`
+    </sql>
+
+    <select id="getTeamById" resultType="Team">
+        SELECT *
+        FROM team
+        WHERE id=#{id}
+    </select>
+
+    <insert id="insertTeam" parameterType="Team"  useGeneratedKeys="true" keyProperty="id">
+        insert into team
+        (team_name,introduction,cp_id,leader_id,invitation_code,create_time,operator_id)
+        values
+        (#{teamName},#{introduction},#{cpId},#{leaderId},#{invitationCode},now(),#{operatorId})
+    </insert>
+
+    <select id="getMember" resultType="UserTeamDto">
+        SELECT user_team.*, u.name as studentName, a.name as academy, u.mobile as mobile
+        from user_team LEFT JOIN user u on user_team.student_id = u.id
+            LEFT JOIN academy a on u.academy_id = a.id
+        WHERE user_team.team_id=#{teamId} AND user_team.status = 1
+            AND user_team.is_delete = 0
+    </select>
+
+    <select id="selectTeamId" resultType="int">
+        select id
+        from team
+        where cp_id=#{cpId} and leader_id=#{leaderId}
+          AND is_delete = 0
+    </select>
+
+    <select id="selectTeamList" resultType="TeamDto" parameterType="TeamQuery">
+        SELECT team.*, c.title as cpName, c.`limit` as limitNum, u.name as leaderName
+        FROM team LEFT JOIN competition c on team.cp_id= c.id
+            LEFT JOIN user u on u.id = team.leader_id
+        <where>
+            <if test="cpId != null">
+                team.cp_id = #{cpId}
+            </if>
+            <if test="leaderId != null">
+                AND team.leader_id = #{leaderId}
+            </if>
+            <if test="isAwarded != null">
+                AND team.is_awarded = #{isAwarded}
+            </if>
+            <if test="status != null">
+                AND team.status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <bind name="_keyword" value="'%' + keyword + '%'"/>
+                AND (team.team_name LIKE #{_keyword} or u.name LIKE #{_keyword} or c.title LIKE #{_keyword} or u.number LIKE #{_keyword})
+            </if>
+            AND team.is_delete = 0
+        </where>
+        ORDER BY update_time DESC
+    </select>
+
+    <select id="ownLead" resultType="Team">
+        SELECT *
+        from team
+        WHERE leader_id=#{id}
+    </select>
+
+    <update id="updateTeam" parameterType="Team">
+        update team
+        <set>
+            <if test="teamName != null">
+                `team_name` = #{teamName},
+            </if>
+            <if test="leaderId != null">
+                `leader_id` = #{leaderId},
+            </if>
+            <if test="introduction != null">
+                `introduction` = #{introduction},
+            </if>
+            <if test="status != null">
+                `status` = #{status},
+            </if>
+            <if test="nowNumber != null">
+                now_number = #{nowNumber},
+            </if>
+            <if test="teacherId != null">
+                teacher_id = #{teacherId},
+            </if>
+            <if test="isAwarded != null">
+                `is_awarded` = #{isAwarded},
+            </if>
+            <if test="isWin != null">
+                `is_win` = #{isWin},
+            </if>
+            <if test="result != null and result != ''">
+                `result` = #{result},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateUserTeamStatus" parameterType="int">
+        update user_team
+        set status = 2
+        where team_id = #{teamId} and status = 0
+    </update>
+
+    <select id="selectTeamById" resultType="TeamDto">
+        select t.*, c.title as cpName, u.name as leaderName
+        from team t LEFT JOIN user u on u.id = t.leader_id
+                    LEFT JOIN competition c on t.cp_id= c.id
+        where t.id = #{id}
+          AND t.is_delete = 0
+    </select>
+
+    <select id="ownRequest" resultType="UserTeam">
+        SELECT *
+        FROM user_team
+        WHERE student_id=#{id} AND is_delete=0
+    </select>
+
+    <select id="requestTeam" resultType="UserTeam">
+        SELECT user_team.*
+        FROM user_team LEFT JOIN team ON team.id=team_id
+        WHERE leader_id=#{id} and user_team.is_delete = 0
+    </select>
+
+    <update id="deleteTeam" parameterType="int">
+        update team
+        set is_delete = 1
+        where id = #{id}
+    </update>
+
+</mapper>

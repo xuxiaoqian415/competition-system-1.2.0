@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="zust.competition.sys.dao.UserDao">
+    <sql id="Base_Column_List">
+        id,`number`,`name`,`password`,`mobile`,`email`,`intro`,type
+    </sql>
+    <select id="academyList" resultType="Academy" >
+        SELECT *
+        from academy
+    </select>
+    <select id="getAcademy" resultType="Academy">
+        select *
+        from academy
+        where id=#{id}
+    </select>
+
+    <select id="selectUser" parameterType="Query" resultType="UserDto">
+        select user.id, number, user.name, mobile, email, intro, type, status, academy_id, a.name as academy
+        from user LEFT JOIN academy a on a.id = user.academy_id
+        <where>
+            <if test="id != null">
+                `user`.id = #{id}
+            </if>
+            <if test="number != null">
+                AND `user`.number = #{number}
+            </if>
+            <if test="password != null">
+                AND `user`.password = #{password}
+            </if>
+            <if test="type != null">
+                AND `user`.type = #{type}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectUserById" resultType="User">
+        select user.id, number, user.name, mobile, email, intro, type, status, academy_id, a.name as academy
+        from user LEFT JOIN academy a on a.id = user.academy_id
+        where user.id=#{id}
+    </select>
+
+    <select id="selectUserByNumber" resultType="User">
+        select
+        <include refid="Base_Column_List"/>
+        from user
+        where number=#{number}
+    </select>
+
+    <select id="selectUsers" parameterType="UserQuery" resultType="UserDto">
+        select user.id, number, user.name, mobile, email, intro, type, status, academy_id, a.name as academy
+        from user LEFT JOIN academy a on a.id = user.academy_id
+        <where>
+            `user`.is_delete = 0
+            <if test="type != null">
+                AND `user`.type = #{type}
+            </if>
+            <if test="academyId != null">
+                AND `user`.academy_id = #{academyId}
+            </if>
+            <if test="status != null">
+                AND `user`.`status` = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <bind name="_keyword" value="'%' + keyword + '%'"/>
+                AND (`user`.name LIKE #{_keyword} or `user`.number LIKE #{_keyword})
+            </if>
+        </where>
+    </select>
+
+
+    <insert id="insertUser" parameterType="User">
+        insert into user (`number`,`name`,`password`,`mobile`,`email`,`intro`,`type`,academy_id,operator_id)
+        values (#{number},#{name},#{password},#{mobile},#{email},#{intro},#{type},#{academyId},#{operatorId})
+    </insert>
+
+    <update id="updateUser" parameterType="User">
+        update user
+        <set>
+            <if test="number != null and number != ''">
+                `number` = #{number},
+            </if>
+            <if test="name != null and name != ''">
+                `name` = #{name},
+            </if>
+            <if test="password != null and password != ''">
+                `password` = #{password},
+            </if>
+            <if test="mobile != null and mobile != ''">
+                `mobile` = #{mobile},
+            </if>
+            <if test="email != null and email != ''">
+                `email` = #{email},
+            </if>
+            <if test="intro != null and intro != ''">
+                `intro` = #{intro},
+            </if>
+            <if test="status != null">
+                `status` = #{status}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="getTeacherList" resultType="UserDto">
+        select user.id, number, user.name, mobile, email, intro, type, status, academy_id, a.name as academy
+        from user LEFT JOIN academy a on a.id = user.academy_id
+        where user.type = 1
+    </select>
+
+    <select id="getStudentList" resultType="UserDto">
+        select user.id, number, user.name, mobile, email, intro, type, status, academy_id, a.name as academy
+        from user LEFT JOIN academy a on a.id = user.academy_id
+        where user.type = 2
+    </select>
+
+</mapper>

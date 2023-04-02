@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: service-user
+  profiles:
+    active: @profile.active@
+  cloud:
+    nacos:
+      config:
+        server-addr: @nacos.addr@
+        namespace: @nacos.namespace@
+        group: @nacos.group@
+        file-extension: yaml
+        shared-configs:
+          - data-id: application.yaml
+            group: DEFAULT_GROUP
+        extension-configs:
+          - data-id: redis.yaml
+            group: @nacos.group@
+            refresh: true
+          - data-id: @datasource@
+            group: @nacos.group@
+            refresh: true
+      discovery:
+        server-addr: @nacos.addr@
+        ip: @this.ip@
+        namespace: @nacos.namespace@
+        service: service-user
+        group: @nacos.group@
+        register-enabled: true

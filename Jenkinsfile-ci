@@ -1,0 +1,102 @@
+// git凭证id
+def git_auth = "c5d28992-3f74-4cac-a029-3f3709b58d0b"
+// git的url地址
+def git_url = "ssh://git@47.122.2.1:8022/group1/competition-system.git"
+
+pipeline {
+	agent any
+    stages {
+        stage('拉取代码') {
+            steps {
+                echo '拉取代码'
+                checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], extensions: [], userRemoteConfigs: [[credentialsId: "${git_auth}", url: "${git_url}"]]])
+            }
+        }
+        stage('编译，安装-公共子工程') {
+        	steps {
+        		echo '编译，安装-公共子工程'
+            	sh label: '', script: 'mvn -f common clean install'
+        	}
+        }
+        stage('编译-微服务工程') {
+        	steps {
+        		echo '编译-微服务工程'
+        		sh """
+        		        if [ $api_gateway = 'true' ]
+        		        then
+        		            mvn -f api-gateway clean compile
+        		        fi
+        		        if [ $service_user = 'true' ]
+        		        then
+        		            mvn -f service-user clean compile
+        		        fi
+        		        if [ $service_team = 'true' ]
+        		        then
+        		            mvn -f service-team clean compile
+        		        fi
+        		        if [ $service_competition = 'true' ]
+        		        then
+        		            mvn -f service-competition clean compile
+        		        fi
+        		        if [ $service_select = 'true' ]
+        		        then
+        		            mvn -f service-select clean compile
+        		        fi
+        		"""
+        	}
+        }
+        stage('代码审查') {
+            steps {
+                echo '代码审查'
+                script {
+                    // 引入Jenkins的SonarqubeScanner工具
+                    scannerHome = tool 'sonar-scanner4.7.0'
+                }
+                // 引入sonarqube服务器环境
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                        if [ $api_gateway = 'true' ]
+        		        then
+        		            cd api-gateway
+                            ${scannerHome}/bin/sonar-scanner
+                            cd ..
+        		        fi
+        		        if [ $service_user = 'true' ]
+        		        then
+        		            cd service-user
+                            ${scannerHome}/bin/sonar-scanner
+                            cd ..
+        		        fi
+        		        if [ $service_team = 'true' ]
+        		        then
+        		            cd service-team
+                            ${scannerHome}/bin/sonar-scanner
+                            cd ..
+        		        fi
+        		        if [ $service_competition = 'true' ]
+        		        then
+        		            cd service-competition
+                            ${scannerHome}/bin/sonar-scanner
+                            cd ..
+        		        fi
+        		        if [ $service_select = 'true' ]
+        		        then
+        		            cd service-select
+                            ${scannerHome}/bin/sonar-scanner
+                            cd ..
+        		        fi
+            		"""
+                }
+            }
+        }
+    }
+    post {
+        success {
+            emailext(
+                subject: '构建通知：${PROJECT_NAME} - Build # ${BUILD_NUMBER} - ${BUILD_STATUS}!',
+                body: '${FILE,path="email.html"}',
+                to: "${email}"
+            )
+        }
+    }
+}

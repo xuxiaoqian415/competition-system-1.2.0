@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://mysql/competition_beta?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+    username: docker
+    password: docker123

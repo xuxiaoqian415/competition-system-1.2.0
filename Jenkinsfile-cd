@@ -1,0 +1,113 @@
+// git凭证id
+def git_auth = "c5d28992-3f74-4cac-a029-3f3709b58d0b"
+// git的url地址
+def git_url = "ssh://git@47.122.2.1:8022/group1/competition-system.git"
+// 定义镜像名称前缀
+def imageName_prefix = "test/competition"
+// nexus的url
+def nexus_url = "47.122.2.1:8082"
+// nexus镜像库名称
+def nexus_project = "competition"
+// nexus凭证
+def nexus_auth = "ed8dbc8f-4a5a-4a29-98f4-420c511e07b6"
+
+pipeline {
+	agent any
+    stages {
+        stage('拉取代码') {
+            steps {
+                echo '拉取代码'
+                checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], extensions: [], userRemoteConfigs: [[credentialsId: "${git_auth}", url: "${git_url}"]]])
+            }
+        }
+        stage('编译，安装-公共子工程') {
+        	steps {
+        		echo '编译，安装-公共子工程'
+            	sh label: '', script: 'mvn -f common clean install'
+        	}
+        }
+        stage('编译-微服务工程') {
+        	steps {
+        		echo '编译-微服务工程'
+        		sh """
+        		        mvn -f ${service_name} clean compile
+        		"""
+        	}
+        }
+        stage('代码审查') {
+            steps {
+                echo '代码审查'
+                script {
+                    // 引入Jenkins的SonarqubeScanner工具
+                    scannerHome = tool 'sonar-scanner4.7.0'
+                }
+                // 引入sonarqube服务器环境
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                        cd ${service_name}
+                        ${scannerHome}/bin/sonar-scanner
+                        cd ..
+            		"""
+                }
+            }
+        }
+        stage('打包') {
+            steps {
+                echo '打包'
+                sh """
+        		        mvn -f ${service_name} package
+        		"""
+            }
+        }
+        stage('制作微服务镜像') {
+            steps {
+                echo '制作微服务镜像'
+                sh """
+                        if [ `docker images | grep -w ${imageName_prefix}/${service_name} | awk '{print \$3}'` != "" ] ; then
+                            docker rmi ${imageName_prefix}/${service_name}
+                        fi
+        		        mvn -f ${service_name} dockerfile:build
+        		"""
+            }
+        }
+        stage('上传镜像') {
+            steps {
+                echo '上传镜像'
+                // 对镜像打标签
+                sh """
+                        if [ `docker images | grep -w ${nexus_url}/${nexus_project}/${tag}/${service_name} | awk '{print \$3}'` != "" ] ; then
+                            docker rmi ${nexus_url}/${nexus_project}/${tag}/${service_name}:${tag}
+                        fi
+        		        docker tag ${imageName_prefix}/${service_name}:latest ${nexus_url}/${nexus_project}/${tag}/${service_name}:${tag}
+        		"""
+        		// 把镜像推送到nexus仓库
+        		withCredentials([usernamePassword(credentialsId: "${nexus_auth}", passwordVariable: 'password', usernameVariable: 'username')]) {
+                    // 登录到nexus
+                    sh "docker login -u ${username} -p ${password} ${nexus_url}"
+                    // 镜像上传
+                    sh """
+                            docker push ${nexus_url}/${nexus_project}/${tag}/${service_name}:${tag}
+                    """
+                    sh "echo 镜像上传成功"
+                }
+            }
+        }
+        stage('部署微服务') {
+            steps {
+                echo '部署微服务'
+                sh """
+                        /opt/jenkins_shell/deploy2.sh ${nexus_url} ${nexus_project} ${service_name} ${tag} ${port}
+                """
+            }
+        }
+    }
+    post {
+        success {
+            emailext(
+                subject: '构建通知：${PROJECT_NAME} - Build # ${BUILD_NUMBER} - ${BUILD_STATUS}!',
+                body: '${FILE,path="email.html"}',
+                to: '1065791875@qq.com'
+            )
+        }
+    }
+}

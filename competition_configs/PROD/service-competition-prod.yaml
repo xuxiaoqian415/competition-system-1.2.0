@@ -1,0 +1,16 @@
+server:
+  port: 8004
+
+upload:
+  # 上传图片的路径
+  location:
+    pics: /upload/pictures/
+    files: /upload/files/
+  # 访问图片图片的路径
+  route:
+    pics: /upload-image/**
+    files: /upload-file/**
+
+gateway:
+  route:
+    name: /competition-serv

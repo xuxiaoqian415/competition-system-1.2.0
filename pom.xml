@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <modules>
+        <module>api-gateway</module>
+        <module>common</module>
+        <module>service-user</module>
+        <module>service-competition</module>
+        <module>service-select</module>
+        <module>service-team</module>
+    </modules>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.3.12.RELEASE</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>zust.competition.sys</groupId>
+    <artifactId>competition-system</artifactId>
+    <version>1.2.0</version>
+    <name>competition-system</name>
+    <packaging>pom</packaging>
+
+    <properties>
+        <java.version>1.8</java.version>
+
+        <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reproting.outputEncoding>UTF-8</project.reproting.outputEncoding>
+        <spring-cloud.version>Hoxton.SR12</spring-cloud.version>
+        <spring-cloud-alibaba.version>2.2.7.RELEASE</spring-cloud-alibaba.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-bootstrap</artifactId>
+                <version>2.2.7</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <profile.active>dev</profile.active>
+                <nacos.addr>47.97.74.157:8849</nacos.addr>
+                <nacos.namespace>competition-system</nacos.namespace>
+                <nacos.group>DEV</nacos.group>
+                <datasource>datasource.yaml</datasource>
+                <this.ip>111.0.236.229</this.ip>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>prod-ali</id>
+            <properties>
+                <profile.active>prod</profile.active>
+                <nacos.addr>47.97.74.157:8849</nacos.addr>
+                <nacos.namespace>competition-system</nacos.namespace>
+                <nacos.group>PROD</nacos.group>
+                <datasource>datasource-ali.yaml</datasource>
+                <this.ip>47.97.74.157</this.ip>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod-tx</id>
+            <properties>
+                <profile.active>prod</profile.active>
+                <nacos.addr>47.97.74.157:8849</nacos.addr>
+                <nacos.namespace>competition-system</nacos.namespace>
+                <nacos.group>PROD</nacos.group>
+                <datasource>datasource-tx.yaml</datasource>
+                <this.ip>101.42.17.135</this.ip>
+            </properties>
+        </profile>
+    </profiles>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <!--开启过滤，用指定的参数替换directory下的文件中的参数-->
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+
+</project>

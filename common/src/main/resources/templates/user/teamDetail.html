@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>团队详情页面</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi" />
+    <link rel="stylesheet" th:href="@{/css/font.css}">
+    <link rel="stylesheet" th:href="@{/css/xadmin.css}">
+    <script th:src="@{/lib/layui/layui.js}" charset="utf-8"></script>
+    <script type="text/javascript" th:src="@{/js/xadmin.js}"></script>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <div style="text-align:center;margin: 5px;line-height: 40px; border: 1px solid gainsboro;">
+                        <ul>
+                            <span style="margin-right: 20px" th:text="'参加的竞赛：'+${detail.cpName}"></span>
+                        </ul>
+                        <ul style="text-align:left;border: 1px solid gainsboro">
+                            <span style="margin-right: 20px" th:text="'团队名：'+${detail.teamName}"></span>
+
+                            <span style="margin-right: 20px" th:text="'负责人：'+${detail.leaderName}"></span>
+
+                            <span style="margin-right: 20px" th:text="'指导老师：'+${detail.teacherName}"></span>
+                        </ul>
+                        <ul style="text-align:left;border: 1px solid gainsboro">
+                            <h4 th:text="'团队介绍：'+${detail.introduction}"></h4>
+                        </ul>
+                        <ul style="text-align:left;border: 1px solid gainsboro">
+                            <h4 th:text="'获奖情况：'+${detail.result}"></h4></ul>
+                    </div>
+
+
+                    <div class="layui-form-item">
+                        <h4>成员详情：</h4>
+                        <table class="layui-table layui-form">
+                            <thead>
+                            <tr>
+                                <th>姓名</th><th>学院</th><th>联系方式</th><th>职务</th>
+                                <th th:if="${detail.isLeader == 1 && detail.status == 0}" th:text="操作"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${leaderInfo != null}">
+                                <td class="layerDemo">
+                                    <!--                                    <a th:onclick="|parent.xadmin.add_tab('负责人个人主页',[['/user-serv/user/showHome?id='+${leaderInfo.id}]],true)|"-->
+                                    <!--                                       href="javascript:;" th:text="${leaderInfo.name}">-->
+                                    <!--                                    </a>-->
+                                    <!--                                    <a style="text-decoration: underline;color: #1E9FFF" data-method="notice"  th:text="${leaderInfo.name}" ></a>-->
+                                    <button type="button" class="leader" style="background-color: white ; border: none" th:data-id="${leaderInfo.id}" data-method="notice" th:text="${leaderInfo.name}" >
+                                    </button>
+                                </td>
+                                <td th:text="${leaderInfo.academy}"></td>
+                                <td th:text="${leaderInfo.mobile}"></td>
+                                <td th:text="负责人"></td>
+                            </tr>
+                            <tr th:each="a:${memberList}" th:if="${memberList.size() != 0}">
+                                <td class="layerDemo">
+                                    <button type="button" style="background-color: white ; border: none"  class="leader" th:data-id="${a.studentId}" data-method="notice" th:text="${a.studentName}" ></button>
+                                </td>
+                                <td th:text="${a.academy}"></td>
+                                <td th:text="${a.mobile}"></td>
+                                <td th:text="${a.role}"></td>
+                                <td th:if="${detail.isLeader == 1 && a.status == 1 && detail.status == 0}">
+                                    <a class="layui-btn layui-btn-warm" lay-event="cancel" th:text="'取消同意'"
+                                       th:href="@{/team-serv/team/request/choice?id=}+${a.id}+@{&type=-10}"></a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="layui-form-item" th:if="${detail.isLeader == 1 && detail.status == 0}">
+                        <div><a class="layui-btn layui-btn-danger" lay-event="agree" th:text="'确认成员 完成组队'"
+                                th:href="@{/team-serv/team/update/status/}+${detail.id}"></a></div>
+                    </div>
+                    <div th:if="${detail.isLeader == 1 && detail.status == 1}">
+                        <a style="color: red" th:href="@{/select-serv/student/lead/}+${detail.cpId}"
+                           th:text="'已完成组队,可以去选指导老师了 >>'"></a>
+                    </div>
+                    <div th:if="${detail.status == 2}">
+                        <p style="color: red">已确定组员和指导老师，报名成功！</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:src="@{/lib/layui/layui.js}"></script>
+<script type="text/html" th:inline=none id="barDemo"></script>
+<script>
+    layui.use(['table', 'layer','laypage','form'], function () {
+        var $ = layui.jquery,
+            layer = layui.layer,
+            laypage = layui.laypage,
+            form = layui.form;
+
+        //触发事件
+        var active = {
+            notice: function (obj) {
+                var a=obj.context.dataset.id
+                // console.log(obj.context.dataset.id+";';")
+                console.log(a+";';")
+                //示范一个公告层
+                layer.open({
+                    type: 2//0（信息框，默认）1（页面层）2（iframe层）3（加载层）4（tips层)
+                    , title: '团队负责人详情' //不显示标题栏
+                    , closeBtn: 1
+                    , area: ['450px','350px']//定义宽高
+                    , shade: 0.1//遮幕
+                    , id: 'LAY_layuipro' //设定一个id，防止重复弹出
+                    // ,btn: [ '表格','取消']
+                    , btnAlign: 'c'//按钮排列：居中对齐
+                    , moveType: 1 //拖拽模式，0或者1
+                    , resize: true
+                    , content: 'http://47.122.2.1:8088/user-serv/user/showHome?id='+a
+                    ,
+                    success: function (layero) {
+                        var btn = layero.find('.layui-layer-btn');
+                        btn.find('.layui-layer-btn0').attr({
+                            href: '${path}'
+                            , target: '_blank'
+                        });
+                    }
+                })
+            }
+        }
+        $('.layerDemo .leader').on('click', function () {
+            var othis = $(this), method = othis.data('method');
+            active[method] ? active[method].call(this, othis) : '';
+        });
+    });
+
+</script>
+</html>

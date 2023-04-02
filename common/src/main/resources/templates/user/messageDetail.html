@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>收件详情</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi" />
+    <link rel="stylesheet" th:href="@{/css/font.css}">
+    <link rel="stylesheet" th:href="@{/css/xadmin.css}">
+    <script th:src="@{/lib/layui/layui.js}" charset="utf-8"></script>
+    <script type="text/javascript" th:src="@{/js/xadmin.js}"></script>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <div style="text-align:center;margin: 5px;line-height: 40px; border: 1px solid gainsboro;">
+                        <ul style="text-align:left;border: 1px solid gainsboro">
+                            <h4 th:text="'发件人：'+${message.name}"></h4></ul>
+                        <ul style="text-align:left;border: 1px solid gainsboro">
+                            <h4 th:text="'发送时间：'+${#dates.format(message.createTime,'yyyy-MM-dd')}"></h4>
+                        </ul>
+                        <ul style="text-align:left;border: 1px solid gainsboro">
+                            <h4 th:text="'收件人：'+${session.thisUser.name}"></h4></ul>
+                        <ul style="text-align:left;border: 1px solid gainsboro">
+                            [[${message.content}]]</ul>
+                        <ul>
+                            <li>
+                                <a onclick="parent.xadmin.add_tab('组队请求处理','/select-serv/student/request/list',true)"
+                                   th:if="${message.jumpType == 1}" href="javascript:;" th:text="'去处理组队请求 >>'">
+                                </a>
+                            </li>
+                            <li>
+                                <a onclick="parent.xadmin.add_tab('指导请求','/select-serv/teacher/select/request/list',true)"
+                                   th:if="${message.jumpType == 2}" href="javascript:;" th:text="'去处理指导请求 >>'">
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:src="@{/lib/layui/layui.js}"></script>
+</html>
